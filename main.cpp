@@ -16,7 +16,6 @@ using namespace std;
 #define Date 10
 #define Hour 24
 #define Model 10
-#define Lim 15.0
 #define oo 999999999
 
 ifstream CityData ("../data_path/CityData.csv");
@@ -163,6 +162,7 @@ void BFS()
 }
 void Out(int xid,int yid,int date,int hour,int CityId,int mi=-1)
 {
+
   if(mi==-1)
   {
     mi=MyDist[xid][yid][date][hour];
@@ -231,13 +231,14 @@ void Goback(int xid,int yid,int date,int hour,int CityId)
     //cout<<"???"<<endl;
   }
 }
-void FindPath()
+bool Got[Date+2][12]={false};
+void FindPath(bool Final=false)
 {
-  BFS();
   for(int date=6;date<=10;date++)
   {
     for(int CityId=1;CityId<=10;CityId++)
     {
+      if(Got[date][CityId]==true)continue;
       //printf("Finding day %d City %d\n",date,CityId);
       bool FLAG=false;
       for(int hour=3;hour<21;hour++)
@@ -246,13 +247,17 @@ void FindPath()
         {
           FLAG=true;
           Goback(City[CityId].xid,City[CityId].yid,date,hour,CityId);
+          //printf("Founded day:%d city:%d\n",date,CityId);
+          Got[date][CityId]=true;
           break;
         }
       }
-      if(!FLAG)
+      if((!FLAG)&& Final)
       {
         //FUCK
         //cout<<"FUCK"<<endl;
+
+        //printf("FUCK day:%d city:%d\n",date,CityId);
 
         int hour=3,mi=0,xid=City[0].xid,yid=City[0].yid;
         for(;xid<=City[CityId].xid;xid+=(City[0].xid<City[CityId].xid ? 1 : -1))
@@ -306,6 +311,11 @@ void ReadTest()
     mystop++;
   }
 
+  //cout<<"ReadTestDone"<<endl;
+  return ;
+}
+void GenerateMap(double Lim=15.0)
+{
   for(int xid=1;xid<=X;xid++)
   {
     for(int yid=1;yid<=Y;yid++)
@@ -319,7 +329,6 @@ void ReadTest()
       }
     }
   }
-  //cout<<"ReadTestDone"<<endl;
   return ;
 }
 void ReadCity()
@@ -357,6 +366,15 @@ int main()
   freopen("ans.csv","w",stdout);
   ReadCity();
   ReadTest();
-  FindPath();
+  for(int i=10;i<=22;i++)
+  {
+
+    //printf("Find %d\n",i);
+
+    GenerateMap(double(i));
+    BFS();
+    FindPath();
+  }
+  FindPath(true);
   return 0;
 }
