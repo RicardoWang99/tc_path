@@ -31,7 +31,37 @@ struct CITY
 class Indicate
 {
 public:
-  double a[15],v;
+  double a[15],v,k,K[11]={0,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1};
+  void Train(int count)
+  {
+    k=0.00000005;
+    double x=0;
+    for(int i=0;i<=10;i++)
+    {
+      x+=K[i]*a[i];
+    }
+    for(int i=0;i<=10;i++)
+    {
+      if(a[i]>=0.5 || a[i]<=-0.5)
+      {
+        K[i]-=k*((x-v)/a[i]);
+      }
+
+    }
+    x=0;
+    for(int i=0;i<=10;i++)
+    {
+      x+=K[i]*a[i];
+    }
+  }
+  void Out()
+  {
+    for(int i=0;i<=10;i++)
+    {
+      printf("K[%d] : %lf\n",i,K[i]);
+    }
+    return ;
+  }
   void GetMax()
   {
     v=a[1];
@@ -41,13 +71,29 @@ public:
     }
     return ;
   }
-  void Generate()
+  void GetAve()
   {
-    GetMax();
+    v=0;
+    for(int i=0;i<=Model;i++)
+    {
+      v+=K[i]*a[i];
+    }
+    return ;
+  }
+  void Generate(int way)
+  {
+    if(way==1)
+    {
+      GetMax();
+    }
+    if(way==2)
+    {
+      GetAve();
+    }
   }
 }Indicate;
 
-double Training[600][600][11][21];
+double Training[600][600][11][21],Training2[600][600][11][21];
 bool MyMap[600][600][11][21];
 int MyDist[600][600][11][21];
 char chartmp[M];
@@ -247,7 +293,7 @@ void FindPath(bool Final=false)
         {
           FLAG=true;
           Goback(City[CityId].xid,City[CityId].yid,date,hour,CityId);
-          //printf("Founded day:%d city:%d\n",date,CityId);
+        //  printf("Founded day:%d city:%d\n",date,CityId);
           Got[date][CityId]=true;
           break;
         }
@@ -257,7 +303,7 @@ void FindPath(bool Final=false)
         //FUCK
         //cout<<"FUCK"<<endl;
 
-        //printf("FUCK day:%d city:%d\n",date,CityId);
+      //  printf("FUCK day:%d city:%d\n",date,CityId);
 
         int hour=3,mi=0,xid=City[0].xid,yid=City[0].yid;
         for(;xid<=City[CityId].xid;xid+=(City[0].xid<City[CityId].xid ? 1 : -1))
@@ -305,13 +351,71 @@ void ReadTest()
     Indicate.a[(int)numtmp[5]]=numtmp[6];
     if((int)numtmp[5]==10)
     {
-      Indicate.Generate();
+      Indicate.Generate(1);
       Training[(int)numtmp[1]][(int)numtmp[2]][(int)numtmp[3]][(int)numtmp[4]]=Indicate.v;
+      Indicate.Generate(2);
+      Training2[(int)numtmp[1]][(int)numtmp[2]][(int)numtmp[3]][(int)numtmp[4]]=Indicate.v;
     }
     mystop++;
   }
 
   //cout<<"ReadTestDone"<<endl;
+  return ;
+}
+void ReadRealTrain()
+{
+  int mystop=0;
+
+  while(!TrainingRealData. eof())
+  {
+    TrainingRealData.getline(chartmp,M);
+    if(mystop==0)
+    {
+      mystop++;
+      //cout<<chartmp<<endl;
+      continue;
+    }
+    myStringCut(chartmp);
+
+    if(mystop==STOP){break;}
+    if(cnttmp==1){break;}
+
+    Training[(int)numtmp[1]][(int)numtmp[2]][(int)numtmp[3]][(int)numtmp[4]]=numtmp[5];
+    mystop++;
+  }
+
+  //cout<<"ReadRealTrainDone"<<endl;
+  return ;
+}
+void ReadTrain()
+{
+  int mystop=0;
+
+  while(!TrainingData. eof())
+  {
+    TrainingData.getline(chartmp,M);
+    if(mystop==0)
+    {
+      mystop++;
+      //cout<<chartmp<<endl;
+      continue;
+    }
+    myStringCut(chartmp);
+
+    if(mystop==-1){break;}
+    if(cnttmp==1){break;}
+
+    Indicate.a[(int)numtmp[5]]=numtmp[6];
+    if((int)numtmp[5]==10)
+    {
+      Indicate.a[0]=1.0;
+      Indicate.v=Training[(int)numtmp[1]][(int)numtmp[2]][(int)numtmp[3]][(int)numtmp[4]];
+      Indicate.Train(mystop);
+    }
+    mystop++;
+    //if(mystop%50000 == 0)Indicate.Out();
+  }
+  //Indicate.Out();
   return ;
 }
 void GenerateMap(double Lim=15.0)
@@ -325,6 +429,23 @@ void GenerateMap(double Lim=15.0)
         for(int hour=3;hour<21;hour++)
         {
           MyMap[xid][yid][date][hour]=(Training[xid][yid][date][hour]<=Lim);
+        }
+      }
+    }
+  }
+  return ;
+}
+void GenerateMap2(double Lim=15.0)
+{
+  for(int xid=1;xid<=X;xid++)
+  {
+    for(int yid=1;yid<=Y;yid++)
+    {
+      for(int date=6;date<=10;date++)
+      {
+        for(int hour=3;hour<21;hour++)
+        {
+          MyMap[xid][yid][date][hour]=(Training2[xid][yid][date][hour]<=Lim);
         }
       }
     }
@@ -364,9 +485,11 @@ void ReadCity()
 int main()
 {
   freopen("ans.csv","w",stdout);
+  ReadRealTrain();
+  ReadTrain();
   ReadCity();
   ReadTest();
-  for(int i=10;i<=22;i++)
+  for(int i=10;i<=19;i++)
   {
 
     //printf("Find %d\n",i);
@@ -374,7 +497,13 @@ int main()
     GenerateMap(double(i));
     BFS();
     FindPath();
+    //printf("Find2 %d\n",i);
+    GenerateMap2(double(i));
+    BFS();
+    FindPath();
   }
+
+
   FindPath(true);
   return 0;
 }
